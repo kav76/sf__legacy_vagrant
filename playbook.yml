@@ -1,0 +1,34 @@
+---
+- name: Install PostgreSQL server
+  hosts: all
+  become: true
+  gather_facts: true
+  vars:
+    postgresql_key_package_pgdg: https://www.postgresql.org/media/keys/ACCC4CF8.asc
+    postgresql_repository_package_pgdg: deb http://apt.postgresql.org/pub/repos/apt {{ ansible_distribution_release }}-pgdg main
+    postgresql_custom_version: "-8.4"
+    postgresql_install_package:
+      - postgresql{{ postgresql_custom_version }}
+
+  tasks:
+    - name: Only run "update_cache=yes" if the last one is more than 3600 seconds ago
+      ansible.builtin.apt:
+        update_cache: true
+        cache_valid_time: 3600
+
+    - name: Install pgdg package signing key
+      ansible.builtin.apt_key:
+        id: B97B0AFCAA1A47F044F244A07FCC7D46ACCC4CF8
+        url: "{{ postgresql_key_package_pgdg }}"
+        state: present
+
+    - name: Set up Postgres repo
+      ansible.builtin.apt_repository:
+        repo: "{{ postgresql_repository_package_pgdg }}"
+        state: present
+
+    - name: Install postgresql
+      ansible.builtin.apt:
+        name: "{{ postgresql_install_package }}"
+        state: present
+        update_cache: true

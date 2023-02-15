@@ -2,24 +2,25 @@
 # vi: set ft=ruby :
 
 $script = <<SCRIPT
-echo I am provisioning...
+echo Provisioning...
 date > /etc/vagrant_provisioned_at
 SCRIPT
 
-Vagrant.configure("2") do |config|
-  config.vm.provision "shell", inline: $script
-  config.vm.provider "virtualbox" do |vb|
+Vagrant.configure("2") do |conf|
+  conf.vm.provider "virtualbox" do |vb|
     vb.memory = "2048"
   end
+  conf.vm.hostname = "postgresql-8.4"
 end
 
 Vagrant::Config.run do |config|
-  config.vm.box = "local_ubuntu"
-  config.vm.host_name = "postgresql" 
+  config.vm.box = "ubuntu2204"
+  config.vm.provision "shell", inline: $script
 
-  config.vm.share_folder "bootstrap", "/mnt/bootstrap", ".", :create => true
-  config.vm.provision :shell, :path => "Vagrant-setup/bootstrap.sh"
-
-  # PostgreSQL Server port forwarding
+  config.vm.provision "ansible" do |ansible|
+    ansible.playbook = "playbook.yml"
+    ansible.force_remote_user = "false"
+  end
+  # PostgreSQL port forwarding
   config.vm.forward_port 5432, 15432
 end
